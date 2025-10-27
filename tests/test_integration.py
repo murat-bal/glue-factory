@@ -17,6 +17,7 @@ from gluefactory.eval.utils import (
     eval_matches_homography,
 )
 from gluefactory.models.two_view_pipeline import TwoViewPipeline
+from gluefactory.models.two_view_pipeline_twin import TwoViewPipelineTWIN
 from gluefactory.settings import root
 from gluefactory.utils.image import ImagePreprocessor
 from gluefactory.utils.tensor import map_tensor
@@ -81,7 +82,8 @@ class TestIntegration(unittest.TestCase):
         )
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        gs = TwoViewPipeline(OmegaConf.load(model_path).model).to(device).eval()
+        #gs = TwoViewPipeline(OmegaConf.load(model_path).model).to(device).eval()
+        gs = TwoViewPipelineTWIN(OmegaConf.load(model_path).model).to(device).eval()
 
         cv_img0, cv_img1 = cv2.imread(str(img_path0)), cv2.imread(str(img_path1))
         data = create_input_data(cv_img0, cv_img1, device)

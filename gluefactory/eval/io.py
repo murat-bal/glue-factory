@@ -49,7 +49,6 @@ def parse_eval_args(benchmark, args, configs_path, default=None):
     if args.conf:
         conf_path = parse_config_path(args.conf, configs_path)
         custom_conf = OmegaConf.load(conf_path)
-        OmegaConf.resolve(custom_conf)
         conf = extract_benchmark_conf(OmegaConf.merge(conf, custom_conf), benchmark)
         args.tag = (
             args.tag if args.tag is not None else conf_path.name.replace(".yaml", "")
@@ -68,7 +67,7 @@ def parse_eval_args(benchmark, args, configs_path, default=None):
     if default:
         conf = OmegaConf.merge(default, conf)
 
-    if args.tag:
+    if args.tag is not None:
         name = args.tag
     elif args.conf and conf.checkpoint:
         name = f"{args.conf}_{conf.checkpoint}"
@@ -106,5 +105,6 @@ def get_eval_parser():
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--overwrite_eval", action="store_true")
     parser.add_argument("--plot", action="store_true")
+    parser.add_argument("--warp_images", action="store_true")
     parser.add_argument("dotlist", nargs="*")
     return parser

@@ -25,7 +25,9 @@ def pad_to_length(
 ):
     shape = list(x.shape)
     d = x.shape[pad_dim]
-    assert d <= length
+    # assert d <= length
+    if d > length:
+        return x[:length,...] 
     if d == length:
         return x
     shape[pad_dim] = length - d

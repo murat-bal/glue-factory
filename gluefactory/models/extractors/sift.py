@@ -120,7 +120,8 @@ class SIFT(BaseModel):
                 )
             else:
                 options["max_num_features"] = self.conf.max_num_keypoints
-            self.sift = pycolmap.Sift(options=options, device=device)
+            self.sift = pycolmap.Sift(options=options, device='cpu')
+            #self.sift = pycolmap.Sift(options=options, device=device)
         elif backend == "opencv":
             self.sift = cv2.SIFT_create(
                 contrastThreshold=self.conf.detection_threshold,
@@ -161,8 +162,9 @@ class SIFT(BaseModel):
             "oris": angles,
             "descriptors": descriptors,
         }
-        if scores is not None:
-            pred["keypoint_scores"] = scores
+        # if scores is not None:
+        #     pred["keypoint_scores"] = scores
+        pred["keypoint_scores"] = np.ones_like(scales)
 
         # sometimes pycolmap returns points outside the image. We remove them
         if self.conf.backend.startswith("pycolmap"):
@@ -171,16 +173,23 @@ class SIFT(BaseModel):
             ).all(-1)
             pred = {k: v[is_inside] for k, v in pred.items()}
 
-        if self.conf.nms_radius is not None:
-            keep = filter_dog_point(
-                pred["keypoints"],
-                pred["scales"],
-                pred["oris"],
-                image_np.shape,
-                self.conf.nms_radius,
-                pred["keypoint_scores"],
+        if pred["keypoints"].shape[0] != 0:
+            if self.conf.nms_radius is not None:
+                keep = filter_dog_point(
+                    pred["keypoints"],
+                    pred["scales"],
+                    pred["oris"],
+                    image_np.shape,
+                    self.conf.nms_radius,
+                    pred["keypoint_scores"],
+                )
+                pred = {k: v[keep] for k, v in pred.items()}
+        else:
+            warnings.warn(
+                "No keypoints detected in the image. "
+                "This may lead to errors in downstream tasks."
             )
-            pred = {k: v[keep] for k, v in pred.items()}
+            pred['descriptors'] = np.asarray([])
 
         pred = {k: torch.from_numpy(v) for k, v in pred.items()}
         if scores is not None:
@@ -191,7 +200,9 @@ class SIFT(BaseModel):
                 pred = {k: v[indices] for k, v in pred.items()}
 
         if self.conf.force_num_keypoints:
-            num_points = min(self.conf.max_num_keypoints, len(pred["keypoints"]))
+            # num_points = min(self.conf.max_num_keypoints, len(pred["keypoints"]))
+            num_points = self.conf.max_num_keypoints
+            pred["keypoints"] = pred["keypoints"]  if len(pred["keypoints"] ) > 0 else torch.Tensor(np.zeros((0,2), dtype='float32'))
             pred["keypoints"] = pad_to_length(
                 pred["keypoints"],
                 num_points,
@@ -199,13 +210,17 @@ class SIFT(BaseModel):
                 mode="random_c",
                 bounds=(0, min(image.shape[1:])),
             )
+            pred["scales"] = pred["scales"] if len(pred[ "scales"] ) > 0 else  torch.Tensor(np.zeros(0, dtype='float32') )
             pred["scales"] = pad_to_length(pred["scales"], num_points, -1, mode="zeros")
+            pred["oris"] = pred["oris"] if len(pred[ "oris"] ) > 0 else  torch.Tensor(np.zeros(0, dtype='float32') )
             pred["oris"] = pad_to_length(pred["oris"], num_points, -1, mode="zeros")
+            pred["descriptors"] = pred["descriptors"] if len(pred[ "descriptors"] ) > 0 else  torch.Tensor(np.zeros((0, 128), dtype='float32') )
             pred["descriptors"] = pad_to_length(
                 pred["descriptors"], num_points, -2, mode="zeros"
             )
             if pred["keypoint_scores"] is not None:
-                scores = pad_to_length(
+                pred["keypoint_scores"] = pred["keypoint_scores"] if len(pred[ "keypoint_scores"] ) > 0 else  torch.Tensor(np.zeros(0, dtype='float32') )
+                pred["keypoint_scores"] = pad_to_length(
                     pred["keypoint_scores"], num_points, -1, mode="zeros"
                 )
         return pred
@@ -221,10 +236,20 @@ class SIFT(BaseModel):
             img = image[k]
             if "image_size" in data.keys():
                 # avoid extracting points in padded areas
-                w, h = data["image_size"][k]
+                w, h = data["image_size"][k].detach().cpu().numpy().astype('int32')
                 img = img[:, :h, :w]
             p = self.extract_single_image(img)
             pred.append(p)
+        
+        # min_points = min([len(p["scales"]) for p in pred])
+        # max_points = max([len(p["scales"]) for p in pred])
+        # if min_points == 0:
+        #     warnings.warn(
+        #         "No keypoints detected in some images. "
+        #         "This may lead to errors in downstream tasks."
+        #     )
+
+        # pred = {k: torch.stack([p[k][:min_points] for p in pred], 0).to(device) for k in pred[0]}
         pred = {k: torch.stack([p[k] for p in pred], 0).to(device) for k in pred[0]}
         if self.conf.rootsift:
             pred["descriptors"] = sift_to_rootsift(pred["descriptors"])

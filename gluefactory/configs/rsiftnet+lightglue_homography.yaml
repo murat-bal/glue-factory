@@ -7,17 +7,17 @@ data:
     num_workers: 14
     homography:
         difficulty: 0.7
-        max_angle: 360
+        max_angle: 45
     photometric:
         name: lg
 model:
     name: two_view_pipeline
     extractor:
-        name: extractors.sift
-        backend: opencv
+        name: gluefactory_nonfree.rsiftnet
         max_num_keypoints: 2048
         force_num_keypoints: True
-        nms_radius: 5
+        detection_threshold: 0.01
+        nms_radius: 3
         trainable: False
     ground_truth:
         name: matchers.homography_matcher
@@ -46,6 +46,3 @@ benchmarks:
       eval:
         estimator: opencv
         ransac_th: 0.5
-      model:
-        extractor:
-          nms_radius: 0

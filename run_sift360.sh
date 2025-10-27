@@ -1,0 +1,1 @@
+python -m gluefactory.eval.rotscale sift360+lg_homography --conf gluefactory/configs/sift+lightglue_homography.yaml --checkpoint outputs/training/sift360+lg_homography/checkpoint_best.tar --warp_images --overwrite 

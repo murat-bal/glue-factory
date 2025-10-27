@@ -1,0 +1,1 @@
+python -m gluefactory.eval.rotscale sp+lg_homograph  --conf gluefactory/configs/superpoint+lightglue_homography.yaml --checkpoint outputs/training/sp+lg_homograph/checkpoint_best.tar --warp_images --overwrite
