@@ -1,0 +1,44 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python : sift-eval",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "gluefactory.eval.hpatches",
+            "args":[ "sift+lg_homography", "--conf", "gluefactory/configs/sift+lightglue-official.yaml" ] ,
+            "env": {"PYTHONPATH":"/home/muratbal/glue-factory/LightGlue"}
+        },
+        {
+            "name": "Python : aliked-twin-train",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "gluefactory.train",
+            "args": [
+                "aliked-twin-train-temp",
+                "--conf",
+                "gluefactory/configs/aliked+lightglue_homography.yaml"
+            ],
+            "env": {"PYTHONPATH":"/home/muratbal/glue-factory/LightGlue",
+                    "CUDA_VISIBLE_DEVICES":"0,2"}
+
+        },
+        {
+            "name": "Python : rsift-train",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "gluefactory.train",
+            "args": [
+                "rsiftnet+45+lg_homography",
+                "--conf",
+                "gluefactory/configs/rsiftnet+lightglue_homography.yaml"
+            ],
+            "env": {"PYTHONPATH":"/home/muratbal/glue-factory/LightGlue",
+                    "CUDA_VISIBLE_DEVICES":"3"}
+
+        },
+    ]
+}
